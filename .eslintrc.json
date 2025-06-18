@@ -1,0 +1,14 @@
+{
+    "extends": [
+        "@rocketseat/eslint-config/node"
+    ],
+    "rules": {
+        "prettier/prettier": [
+            "error",
+            {
+                "tabWidth": 2,
+                "useTabs": true
+            }
+        ]
+    }   
+}
