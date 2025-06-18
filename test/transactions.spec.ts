@@ -118,8 +118,4 @@ describe("Transactions routes", () => {
 			amount: 3000, // 5000 (crédito) - 2000 (débito)
 		});
 	});
-
-	// skip é usado para pular um teste específico, útil quando o teste ainda não está implementado ou está em desenvolvimento
-	// todo é usado para marcar um teste que ainda precisa ser implementado
-	// only é usado para executar apenas um teste específico, ignorando os outros testes no arquivo
 });

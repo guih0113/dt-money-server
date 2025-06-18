@@ -4,20 +4,6 @@ import { randomUUID } from "node:crypto";
 import { knex } from "../database";
 import { checkSessionIdExists } from "../middlewares/check-session-id-exists";
 
-// cookies são formas de manter estado entre requisições HTTP
-// e são usados para autenticação, preferências do usuário, etc.
-
-// tipos de testes mais famosos:
-// unitários, integração e ponta a ponta (end-to-end).
-// unitários testam partes isoladas do código, como funções ou métodos.
-// testes de integração verificam se diferentes partes do sistema funcionam juntas corretamente.
-// testes ponta a ponta (end-to-end) simulam o comportamento do usuário final, testando o sistema como um todo, desde a interface do usuário até o banco de dados.
-
-// Pirâmide de testes:
-// 1. Testes unitários (base da pirâmide, mais rápidos e numerosos)
-// 2. Testes de integração (menos numerosos, mas importantes para verificar a interação entre componentes	)
-// 3. Testes ponta a ponta (menos numerosos, mais lentos, mas importantes para verificar o sistema como um todo) => não dependem de nenhuma tecnologia ou arquitetura
-
 export async function transactionsRoutes(app: FastifyInstance) {
 	// Busca todas as transações
 	app.get(
