@@ -14,6 +14,7 @@ const envSchema = z.object({
 	DATABASE_CLIENT: z.enum(["sqlite", "pg"]), // pg = postgres
 	DATABASE_URL: z.string(),
 	PORT: z.coerce.number().default(10000), // coerce converte para número caso seja de outro tipo
+	HOST: z.string().default("0.0.0.0"),
 });
 
 export const _env = envSchema.safeParse(process.env);
