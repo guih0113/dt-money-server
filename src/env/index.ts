@@ -13,7 +13,7 @@ const envSchema = z.object({
 		.default("development"),
 	DATABASE_CLIENT: z.enum(["sqlite", "pg"]), // pg = postgres
 	DATABASE_URL: z.string(),
-	PORT: z.coerce.number().default(3333), // coerce converte para número caso seja de outro tipo
+	PORT: z.coerce.number().default(10000), // coerce converte para número caso seja de outro tipo
 });
 
 export const _env = envSchema.safeParse(process.env);
