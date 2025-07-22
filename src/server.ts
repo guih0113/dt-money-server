@@ -1,5 +1,6 @@
 import { app } from "./app";
 import { env } from "./env";
+import "./@types/fastify.d.ts";
 
 app
 	.listen({
