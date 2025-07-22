@@ -47,6 +47,8 @@ export async function transactionsRoutes(app: FastifyInstance) {
 			);
 		}
 
+		baseTransactionsQuery = baseTransactionsQuery.orderBy("created_at", "desc");
+
 		// Usamos .clone() para que a query de contagem não seja afetada pelo .offset() e .limit()
 		const countResult = await baseTransactionsQuery
 			.clone()
