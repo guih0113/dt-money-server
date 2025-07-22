@@ -3,31 +3,26 @@ import { execSync } from "node:child_process";
 import request from "supertest";
 import { app } from "../src/app";
 
-// Todos sao testes end-to-end (E2E)
-// Categorizando os testes em um grupo específico ("Transactions routes")
 describe("Transactions routes", () => {
-	// método usado para iniciar o servidor antes de todos os testes (executado uma vez antes de todos os testes)
 	beforeAll(async () => {
 		await app.ready();
 	});
 
-	// método usado para fechar o servidor após todos os testes
 	afterAll(async () => {
 		await app.close();
 	});
 
-	// executa antes de cada teste, garantindo que o banco de dados esteja limpo e pronto antes de cada teste ser executado
 	beforeEach(() => {
 		execSync("npm run knex migrate:rollback --all"); // limpa todas as migrações anteriores (rollback executa o método down de todas as migrações)
 		execSync("npm run knex migrate:latest"); // cria todas as migrações novamente
 	});
 
-	// it faz o mesmo que o test, mas é mais usado para testes unitários ("Deveria ser capaz de criar uma nova transação")
 	it("should be able to create a new transaction", async () => {
 		await request(app.server)
 			.post("/transactions")
 			.send({
 				title: "New transaction",
+				description: "New transaction test",
 				amount: 5000,
 				type: "credit",
 			})
@@ -39,6 +34,7 @@ describe("Transactions routes", () => {
 			.post("/transactions")
 			.send({
 				title: "New transaction",
+				description: "New transaction test",
 				amount: 5000,
 				type: "credit",
 			});
@@ -58,36 +54,73 @@ describe("Transactions routes", () => {
 		]);
 	});
 
-	it("should be able to get a specific transaction", async () => {
-		const createTransactionResponse = await request(app.server)
+	it("should be able to search transactions by title", async () => {
+		const createTransactionResponse1 = await request(app.server)
 			.post("/transactions")
 			.send({
-				title: "New transaction",
-				amount: 5000,
+				title: "Salary Income",
+				description: "Monthly salary payment",
+				amount: 10000,
 				type: "credit",
 			});
 
-		const cookies = createTransactionResponse.get("Set-Cookie") ?? [];
+		const cookies = createTransactionResponse1.get("Set-Cookie") ?? [];
 
-		const listTransactionsResponse = await request(app.server)
-			.get("/transactions")
+		await request(app.server)
+			.post("/transactions")
+			.set("Cookie", cookies)
+			.send({
+				title: "Food Expenses",
+				description: "Groceries for the week",
+				amount: 500,
+				type: "debit",
+			});
+
+		await request(app.server)
+			.post("/transactions")
+			.set("Cookie", cookies)
+			.send({
+				title: "Car Maintenance",
+				description: "Oil change and tire rotation",
+				amount: 300,
+				type: "debit",
+			});
+
+		const searchFoodResponse = await request(app.server)
+			.get("/transactions?query=Food")
 			.set("Cookie", cookies)
 			.expect(200);
 
-		const transactionTitle =
-			listTransactionsResponse.body.transactions[0].title;
-
-		const getTransactionResponse = await request(app.server)
-			.get(`/transactions/${transactionTitle}`)
-			.set("Cookie", cookies)
-			.expect(200);
-
-		expect(getTransactionResponse.body.transaction).toEqual(
+		expect(searchFoodResponse.body.transactions).toHaveLength(1);
+		expect(searchFoodResponse.body.transactions[0]).toEqual(
 			expect.objectContaining({
-				title: "New transaction",
-				amount: 5000,
+				title: "Food Expenses",
+				amount: -500,
 			}),
 		);
+		expect(searchFoodResponse.body.total).toEqual(1);
+
+		const searchSalaryResponse = await request(app.server)
+			.get("/transactions?query=salary")
+			.set("Cookie", cookies)
+			.expect(200);
+
+		expect(searchSalaryResponse.body.transactions).toHaveLength(1);
+		expect(searchSalaryResponse.body.transactions[0]).toEqual(
+			expect.objectContaining({
+				title: "Salary Income",
+				amount: 10000,
+			}),
+		);
+		expect(searchSalaryResponse.body.total).toEqual(1);
+
+		const searchNonExistentResponse = await request(app.server)
+			.get("/transactions?query=Vacation")
+			.set("Cookie", cookies)
+			.expect(200);
+
+		expect(searchNonExistentResponse.body.transactions).toHaveLength(0);
+		expect(searchNonExistentResponse.body.total).toEqual(0);
 	});
 
 	it("should be able to get the summary", async () => {
@@ -95,6 +128,7 @@ describe("Transactions routes", () => {
 			.post("/transactions")
 			.send({
 				title: "Credit transaction",
+				description: "New transaction test",
 				amount: 5000,
 				type: "credit",
 			});
@@ -106,6 +140,7 @@ describe("Transactions routes", () => {
 			.set("Cookie", cookies)
 			.send({
 				title: "Debit transaction",
+				description: "New transaction test",
 				amount: 2000,
 				type: "debit",
 			});
@@ -117,6 +152,90 @@ describe("Transactions routes", () => {
 
 		expect(summaryResponse.body.summary).toEqual({
 			amount: 3000, // 5000 (crédito) - 2000 (débito)
+		});
+	});
+
+	it("should be able to get the credit summary", async () => {
+		const createCreditTransaction1 = await request(app.server)
+			.post("/transactions")
+			.send({
+				title: "Salary",
+				description: "Monthly salary",
+				amount: 5000,
+				type: "credit",
+			});
+
+		const cookies = createCreditTransaction1.get("Set-Cookie") ?? [];
+
+		await request(app.server)
+			.post("/transactions")
+			.set("Cookie", cookies)
+			.send({
+				title: "Freelance Payment",
+				description: "Project completion",
+				amount: 2500,
+				type: "credit",
+			});
+
+		await request(app.server)
+			.post("/transactions")
+			.set("Cookie", cookies)
+			.send({
+				title: "Rent",
+				description: "Monthly rent payment",
+				amount: 1000,
+				type: "debit",
+			});
+
+		const creditSummaryResponse = await request(app.server)
+			.get("/transactions/summary/credit")
+			.set("Cookie", cookies)
+			.expect(200);
+
+		expect(creditSummaryResponse.body.creditSummary).toEqual({
+			amount: 7500, // 5000 (salary) + 2500 (freelance)
+		});
+	});
+
+	it("should be able to get the debit summary", async () => {
+		const createCreditTransaction = await request(app.server)
+			.post("/transactions")
+			.send({
+				title: "Investment",
+				description: "Investment gain",
+				amount: 10000,
+				type: "credit",
+			});
+
+		const cookies = createCreditTransaction.get("Set-Cookie") ?? [];
+
+		await request(app.server)
+			.post("/transactions")
+			.set("Cookie", cookies)
+			.send({
+				title: "Groceries",
+				description: "Weekly groceries",
+				amount: 300,
+				type: "debit",
+			});
+
+		await request(app.server)
+			.post("/transactions")
+			.set("Cookie", cookies)
+			.send({
+				title: "Electricity Bill",
+				description: "Monthly electricity bill",
+				amount: 150,
+				type: "debit",
+			});
+
+		const debitSummaryResponse = await request(app.server)
+			.get("/transactions/summary/debit")
+			.set("Cookie", cookies)
+			.expect(200);
+
+		expect(debitSummaryResponse.body.debitSummary).toEqual({
+			amount: -450, // -300 (groceries) + -150 (electricity)
 		});
 	});
 });
