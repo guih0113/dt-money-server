@@ -11,9 +11,9 @@ const envSchema = z.object({
 	NODE_ENV: z
 		.enum(["development", "test", "production"])
 		.default("development"),
-	DATABASE_CLIENT: z.enum(["sqlite", "pg"]), // pg = postgres
+	DATABASE_CLIENT: z.enum(["sqlite", "pg"]),
 	DATABASE_URL: z.string(),
-	PORT: z.coerce.number().default(10000), // coerce converte para número caso seja de outro tipo
+	PORT: z.coerce.number().default(10000),
 	HOST: z.string().default("0.0.0.0"),
 });
 
