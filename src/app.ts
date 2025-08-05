@@ -6,7 +6,7 @@ import cors from "@fastify/cors";
 export const app = fastify();
 
 app.register(cors, {
-	origin: "http://localhost:5173",
+	origin: ["http://localhost:5173", "https://dt-money-web.vercel.app"],
 	credentials: true,
 });
 
