@@ -5,18 +5,44 @@ import { knex } from "../database";
 
 export async function transactionsRoutes(app: FastifyInstance) {
 	app.addHook("preHandler", async (request, reply) => {
-		let sessionId = request.cookies.sessionId;
+		// Função helper para extrair sessionId do header (pode ser string ou array)
+		const getSessionIdFromHeader = (
+			headerValue: string | string[] | undefined,
+		): string | undefined => {
+			if (!headerValue) return undefined;
+			return Array.isArray(headerValue) ? headerValue[0] : headerValue;
+		};
+
+		// Tentar pegar sessionId do cookie primeiro, depois do header
+		let sessionId =
+			request.cookies.sessionId ||
+			getSessionIdFromHeader(request.headers["x-session-id"]);
+
+		console.log(
+			"🍪 Received sessionId from cookie:",
+			request.cookies.sessionId,
+		);
+		console.log(
+			"📡 Received sessionId from header:",
+			request.headers["x-session-id"],
+		);
+		console.log("🆔 Final sessionId being used:", sessionId);
 
 		if (!sessionId) {
 			sessionId = randomUUID();
+			console.log("🆔 Created new sessionId:", sessionId);
+
 			reply.cookie("sessionId", sessionId, {
 				path: "/",
 				maxAge: 60 * 60 * 24 * 7, // cookie válido por 7 dias
+				// Configurações para cross-origin
+				sameSite: "none",
+				secure: true, // necessário para sameSite: 'none'
+				httpOnly: false, // permitir acesso via JavaScript
 			});
 		}
 
 		request.sessionId = sessionId;
-		// await knex("transactions").del();
 	});
 
 	app.get("/", async (request: FastifyRequest, reply: FastifyReply) => {
