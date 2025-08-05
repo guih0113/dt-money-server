@@ -120,16 +120,14 @@ export async function transactionsRoutes(app: FastifyInstance) {
 
 		const { sessionId } = request;
 
-		const [newTransaction] = await knex("transactions")
-			.insert({
-				id: randomUUID(),
-				title,
-				description,
-				amount: type === "credit" ? amount : amount * -1,
-				session_id: sessionId,
-			})
-			.returning("*");
+		await knex("transactions").insert({
+			id: randomUUID(),
+			title,
+			description,
+			amount: type === "credit" ? amount : amount * -1,
+			session_id: sessionId,
+		});
 
-		return reply.status(201).send(newTransaction);
+		return reply.status(201).send();
 	});
 }
